@@ -1,39 +1,110 @@
 # 🏘️ MVP - Identificação de Oportunidades no Mercado de Leilões Imobiliários
 
-## 📌 Objetivo
+## 🎯 Objetivo
 
-Este projeto tem como objetivo desenvolver um pipeline de dados que permita identificar oportunidades de arrematação de imóveis residenciais com alto potencial de lucro no curto prazo (até 12 meses). A análise será baseada na comparação entre o valor de mercado dos imóveis e dois parâmetros principais: o valor de avaliação bancária e o valor final de arrematação em leilões judiciais ou extrajudiciais.
+Este projeto tem como objetivo desenvolver um pipeline de dados na nuvem, utilizando a plataforma Databricks, com foco na **identificação de imóveis arrematados em leilões com alto potencial de lucro na revenda**. A estratégia consiste na **comparação entre o valor de mercado do metro quadrado** e:
 
-O propósito é oferecer, ainda que de forma inicial, um apoio à tomada de decisão para investidores que atuam no mercado de leilões, sinalizando os municípios e os perfis de imóveis com maior potencial de retorno financeiro estimado.
+- O valor de avaliação bancária;
+- O valor de arrematação registrado nos leilões judiciais ou extrajudiciais.
 
----
-
-## ❓ Perguntas de Negócio
-
-1. Quais municípios apresentam maior diferença média entre o valor de mercado e o valor de avaliação bancária dos imóveis?
-2. Quais municípios apresentam maior diferença média entre o valor de mercado e o valor de arrematação em leilões?
-3. Quais tipos de imóveis tendem a apresentar maior potencial de lucro na revenda pós-arrematação?
-4. Existe correlação entre o valor de avaliação e o desconto obtido no leilão?
-5. Em quais regiões os imóveis arrematados tendem a apresentar maior retorno percentual estimado?
+A intenção é fornecer suporte à **tomada de decisão por parte de investidores**, sinalizando os bairros e perfis de imóveis com maior potencial de retorno financeiro estimado no curto prazo (até 12 meses).
 
 ---
 
-## 🛠️ Etapas do Projeto
+## ❓ Perguntas de Negócio e Respostas
 
-O projeto seguirá as etapas propostas pelo curso:
+1. **Em quais bairros há maior diferença percentual entre o valor de mercado por m² e o valor de avaliação?**  
+   R: Centro e Campo Grande apresentaram os maiores gaps entre valor de avaliação e valor de mercado, indicando avaliações superestimadas.
 
-1. **Busca pelos dados**
-2. **Coleta e armazenamento na nuvem (Databricks)**
-3. **Modelagem de dados (formato flat, para Data Lake)**
-4. **Pipeline de ETL para carga no ambiente de análise**
-5. **Análise de qualidade dos dados e solução do problema**
-6. **Autoavaliação e sugestões de evolução futura**
+2. **Em quais bairros há maior diferença percentual entre o valor de mercado por m² e o valor final de arrematação?**  
+   R: Santa Cruz se destacou com alguns imóveis arrematados com até 60% de desconto real sobre o valor de mercado.
+
+3. **Quais perfis de imóveis apresentam maior potencial de desconto real?**  
+   R: Imóveis com 2 quartos e área útil entre 40 e 60 m² apresentaram os maiores descontos percentuais.
+
+4. **Existe correlação entre o desconto anunciado nos leilões e o desconto real calculado por m²?**  
+   R: Não. A análise de dispersão mostrou diversos casos em que o desconto anunciado era alto, mas o preço estava acima do mercado.
+
+5. **Quais imóveis arrematados se destacam como grandes oportunidades de negócio?**  
+   R: Foi gerado um DataFrame com os imóveis com maiores descontos reais, cruzando com seus respectivos links para consulta direta.
 
 ---
 
-## 🔮 Visão Futura
+## 📦 Fontes de Dados
 
-Para uma versão evoluída deste MVP, pretende-se incluir um mecanismo de análise automatizada dos editais de leilão, extraindo informações jurídicas e financeiras (como ônus, dívidas e restrições) a partir de documentos oficiais. Isso permitiria calcular um score de risco para cada imóvel, agregando ainda mais valor ao processo decisório por meio de técnicas de NLP e IA.
+- **Leilões da Caixa Econômica Federal** (coletados via planilhas públicas).
+- **Valores de mercado** obtidos manualmente via anúncios no site VivaReal (regiões: Centro, Campo Grande e Santa Cruz - RJ).
+
+> ❗ Devido a proteções contra scraping em portais como Zap Imóveis e OLX, foi necessário realizar a coleta do valor de mercado por meio de extração manual de anúncios com informações visuais.
 
 ---
 
+## 🔄 Pipeline de Dados
+
+O projeto foi implementado inteiramente na plataforma **Databricks Community Edition**, utilizando Apache Spark e Python.
+
+### 🔍 1. Coleta
+- Base principal: imóveis em leilão (leilões da Caixa).
+- Complemento: anúncios do mercado imobiliário local (VivaReal).
+
+### 🧱 2. Modelagem
+- Modelo flat (Data Lake) com duas fontes principais:
+  - `df_completo`: imóveis de leilão, com ID, bairro, área, valor de avaliação, preço de arrematação e link.
+  - `df_mercado_limpo`: imóveis de mercado, com bairro, área e preço.
+- Catálogo de dados com descrição dos campos e tipos (fornecido no notebook).
+
+### ⚙️ 3. Carga
+- Dados tratados e persistidos em **formato Parquet**, organizados por checkpoints para facilitar reuso.
+
+### 📊 4. Análise
+
+#### a. Qualidade dos dados
+- Verificação e remoção de valores nulos.
+- Normalização de nomes de bairros para cruzamento de dados.
+- Cálculo de métricas de dispersão, média e outliers por bairro e área útil.
+
+#### b. Solução do problema
+- Cálculo do **valor de mercado por m²** por bairro.
+- Cálculo do **valor de leilão por m²**.
+- Cálculo do **desconto real percentual**:  
+  \[ \text{Desconto real} = \left(\frac{\text{valor de mercado} - \text{valor de leilão}}{\text{valor de mercado}}\right) \times 100 \]
+- Comparação entre o **desconto anunciado** (fornecido na base da Caixa) e o **desconto real** obtido com base nos preços de mercado.
+- Visualização dos resultados com gráficos de dispersão e boxplots.
+
+---
+
+## 📌 Principais Conclusões
+
+- A maioria dos imóveis apresenta **desconto real inferior ao anunciado**, indicando possíveis distorções nos valores de avaliação.
+- Imóveis com **maior área útil** tendem a ter maior variação de preço por m² e podem esconder boas oportunidades.
+- A **zona oeste do Rio de Janeiro** (Campo Grande, Santa Cruz e Centro) concentra imóveis com maior potencial de retorno.
+- Há muitos casos com **desconto real negativo**, o que indica que o valor de avaliação pode estar inflado ou que ainda estão em fases iniciais de leilão.
+
+---
+
+## 🔭 Visão Futura
+
+Para uma evolução do projeto, pretende-se:
+- Automatizar a coleta de preços de mercado via OCR e NLP a partir de screenshots de portais.
+- Adicionar análise de risco jurídico com extração de informações de editais.
+- Expandir a cobertura para outras cidades e tipos de imóvel.
+- Incluir uma métrica de "risco x retorno".
+
+---
+
+## 📁 Organização
+
+- `notebook_MVP_Leilao`: desenvolvimento completo do pipeline em Databricks
+- `/FileStore/tables`: dados em formato Parquet
+- `README.md`: descrição completa do projeto
+- `resultados.png`: visualizações principais (gráficos)
+
+---
+
+## ✍️ Autoavaliação
+
+O objetivo proposto foi amplamente atendido. Conseguimos construir um pipeline funcional na nuvem com coleta, modelagem, carga e análise de dois conjuntos de dados distintos. Embora a coleta automatizada de dados de mercado não tenha sido possível devido a restrições de scraping, contornamos isso com extração manual via screenshots, permitindo manter a qualidade e integridade da análise.
+
+As maiores dificuldades foram técnicas, relacionadas a barreiras de scraping impostas pelos sites e ao tempo limitado para coleta manual. A solução encontrada foi realista, criativa e viável para o contexto do MVP.
+
+Como trabalho futuro, fica o objetivo de automatizar a coleta com OCR ou API confiável, expandir a cobertura geográfica e realizar a análise de risco jurídico de cada imóvel, aumentando a utilidade prática da ferramenta como apoio ao investimento em leilões.
