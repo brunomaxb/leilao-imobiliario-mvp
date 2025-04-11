@@ -94,10 +94,11 @@ Para uma evolução do projeto, pretende-se:
 
 ## 📁 Organização
 
-- `notebook_MVP_Leilao`: desenvolvimento completo do pipeline em Databricks
-- `/FileStore/tables`: dados em formato Parquet
-- `README.md`: descrição completa do projeto
-- `resultados.png`: visualizações principais (gráficos)
+├── data/               # Dados utilizados no projeto (CSV, Parquet, etc.)
+├── notebooks/          # Notebooks com o pipeline de análise no Databricks
+├── screenshots/        # Evidências visuais (gráficos, análises, interface)
+├── src/                # Scripts auxiliares ou temporários usados no processo
+├── README.md           # Descrição geral do projeto e instruções
 
 ---
 
